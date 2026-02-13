@@ -1,0 +1,114 @@
+package no_sensitive_patterns
+
+import (
+	"context"
+	"log/slog"
+
+	"go.uber.org/zap"
+)
+
+func testsSlogMessages() {
+	ctx := context.Background()
+	l := slog.Default()
+
+	const (
+		slogConstBadPass = "const password value"
+		slogConstBadTok  = "const token value"
+		slogConstBadIP   = "const ip_address value"
+		slogConstBadCard = "const card 1111-2222-3333-4444 value"
+		slogConstOK      = "const mytoken and password123 are safe"
+	)
+
+	var slogVar = "var secret value"
+
+	slog.Debug("safe slog debug")
+	slog.Info("leaked")                                       // want "found sensitive pattern"
+	slog.Warn("client blocked")                               // want "found sensitive pattern"
+	slog.Error("my value")                                    // want "found sensitive pattern"
+	slog.DebugContext(ctx, "=1.2.3.4")                        // want "found sensitive pattern"
+	slog.InfoContext(ctx, "password token secret ip_address") // want "found sensitive pattern"
+	slog.WarnContext(ctx, "mytoken and password123 are safe")
+	slog.ErrorContext(ctx, "prefix_token suffix")
+	slog.Log(ctx, slog.LevelInfo, "before after") // want "found sensitive pattern"
+	slog.LogAttrs(ctx, slog.LevelWarn, "and")     // want "found sensitive pattern"
+	slog.Log(ctx, slog.LevelDebug, "card leaked") // want "found sensitive pattern"
+
+	slog.Debug(slogConstBadPass)                         // want "found sensitive pattern"
+	slog.InfoContext(ctx, slogConstBadTok)               // want "found sensitive pattern"
+	slog.WarnContext(ctx, slogConstBadIP)                // want "found sensitive pattern"
+	slog.LogAttrs(ctx, slog.LevelInfo, slogConstBadCard) // want "found sensitive pattern"
+	slog.ErrorContext(ctx, slogConstOK)
+
+	l.Debug(slogVar)
+	l.Info("password")                // want "found sensitive pattern"
+	l.Warn("token")                   // want "found sensitive pattern"
+	l.Error("secret")                 // want "found sensitive pattern"
+	l.DebugContext(ctx, "ip_address") // want "found sensitive pattern"
+	l.InfoContext(ctx, "safe logger context")
+	l.WarnContext(ctx, "mytoken_value")
+	l.ErrorContext(ctx, "value")       // want "found sensitive pattern"
+	l.Log(ctx, slog.LevelError, "and") // want "found sensitive pattern"
+	l.LogAttrs(ctx, slog.LevelError, "safe attrs")
+	l.Log(ctx, slog.LevelWarn, "masked card") // want "found sensitive pattern"
+}
+
+func testsZapMessages() {
+	l := &zap.Logger{}
+	s := &zap.SugaredLogger{}
+
+	const (
+		zapConstBad     = "const password and token in zap"
+		zapConstBadCard = "const card 2222-3333-4444-5555 in zap"
+		zapConstOK      = "const password123 and mytoken safe"
+	)
+
+	var zapVar = "var ip_address in zap"
+
+	l.Debug("in debug") // want "found sensitive pattern"
+	l.Info("safe info")
+	l.Warn("warn")    // want "found sensitive pattern"
+	l.Error("error")  // want "found sensitive pattern"
+	l.DPanic("value") // want "found sensitive pattern"
+	l.Panic("safe panic")
+	l.Fatal("ip_address_token")
+	l.Warn("card") // want "found sensitive pattern"
+
+	s.Debug("in sugar") // want "found sensitive pattern"
+	s.Info("safe sugar")
+	s.Warn("password") // want "found sensitive pattern"
+	s.Error("and")     // want "found sensitive pattern"
+	s.DPanic("safe dpanic")
+	s.Panic("and") // want "found sensitive pattern"
+	s.Fatal("safe fatal sugar")
+
+	s.Debugf("fmt") // want "found sensitive pattern"
+	s.Infof("safe fmt")
+	s.Warnf("fmt")  // want "found sensitive pattern"
+	s.Errorf("fmt") // want "found sensitive pattern"
+	s.DPanicf("safe dpanicf")
+	s.Panicf("and fmt") // want "found sensitive pattern"
+	s.Fatalf("safe fatalf")
+
+	s.Debugw("w") // want "found sensitive pattern"
+	s.Infow("safe w")
+	s.Warnw("w")  // want "found sensitive pattern"
+	s.Errorw("w") // want "found sensitive pattern"
+	s.DPanicw("safe dpanicw")
+	s.Panicw("and w") // want "found sensitive pattern"
+	s.Fatalw("safe fatalw")
+
+	s.Debugln("ln") // want "found sensitive pattern"
+	s.Infoln("safe ln")
+	s.Warnln("ln")  // want "found sensitive pattern"
+	s.Errorln("ln") // want "found sensitive pattern"
+	s.DPanicln("safe dpanicln")
+	s.Panicln("and ln") // want "found sensitive pattern"
+	s.Fatalln("safe fatalln")
+	s.Errorf("billing failed") // want "found sensitive pattern"
+
+	l.Info(zapConstBad)     // want "found sensitive pattern"
+	s.Warn(zapConstBadCard) // want "found sensitive pattern"
+	s.Infof(zapConstOK)
+
+	s.Warn(zapVar)
+}

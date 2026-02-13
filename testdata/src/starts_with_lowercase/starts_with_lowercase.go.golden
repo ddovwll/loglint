@@ -1,0 +1,101 @@
+package starts_with_lowercase
+
+import (
+	"context"
+	"log/slog"
+
+	"go.uber.org/zap"
+)
+
+func testsSlogMessages() {
+	ctx := context.Background()
+	l := slog.Default()
+
+	const (
+		slogConstUpper = "SlogConstUpper"
+		slogConstDigit = "7slogConst"
+		slogConstSpace = " slogConst"
+		slogConstEmpty = ""
+		slogConstCyr   = "ПриветConst"
+		slogConstNoEng = "Привет"
+	)
+
+	var slogVar = "VarUpper"
+
+	slog.Debug("valid lower")
+	slog.Info("upper literal")                  // want "log message must start with a lowercase English letter"
+	slog.Warn("digit literal")                  // want "log message must start with a lowercase English letter"
+	slog.Error("leading space literal")         // want "log message must start with a lowercase English letter"
+	slog.DebugContext(ctx, "")                  // want "log message must start with a lowercase English letter"
+	slog.InfoContext(ctx, "   ")                // want "log message must start with a lowercase English letter"
+	slog.WarnContext(ctx, "upper")              // want "log message must start with a lowercase English letter"
+	slog.ErrorContext(ctx, "lower")             // want "log message must start with a lowercase English letter"
+	slog.Log(ctx, slog.LevelInfo, "symbolMsg")  // want "log message must start with a lowercase English letter"
+	slog.LogAttrs(ctx, slog.LevelInfo, "a")     // want "log message must start with a lowercase English letter"
+
+	slog.Debug(slogConstUpper)                  // want "log message must start with a lowercase English letter"
+	slog.InfoContext(ctx, slogConstDigit)       // want "log message must start with a lowercase English letter"
+	slog.WarnContext(ctx, slogConstSpace)       // want "log message must start with a lowercase English letter"
+	slog.ErrorContext(ctx, slogConstEmpty)      // want "log message must start with a lowercase English letter"
+	slog.Log(ctx, slog.LevelWarn, slogConstCyr) // want "log message must start with a lowercase English letter"
+	slog.LogAttrs(ctx, slog.LevelError, slogConstNoEng) // want "log message must start with a lowercase English letter"
+
+	l.Debug(slogVar)
+}
+
+func testsZapMessages() {
+	l := &zap.Logger{}
+	s := &zap.SugaredLogger{}
+
+	const (
+		zapConstUpper = "ZapConstUpper"
+		zapConstDigit = "8zapConst"
+	)
+
+	var zapVar = "VarUpper"
+
+	l.Debug("zapUpper")       // want "log message must start with a lowercase English letter"
+	l.Info("zapDigit")        // want "log message must start with a lowercase English letter"
+	l.Warn("zapSpace")        // want "log message must start with a lowercase English letter"
+	l.Error("validzap")
+	l.DPanic("zapUpper")      // want "log message must start with a lowercase English letter"
+	l.Panic("zaplower")       // want "log message must start with a lowercase English letter"
+	l.Fatal("zapSymbol")      // want "log message must start with a lowercase English letter"
+
+	s.Debug("sugaredUpper")   // want "log message must start with a lowercase English letter"
+	s.Info("sugar")           // want "log message must start with a lowercase English letter"
+	s.Warn("sugared")         // want "log message must start with a lowercase English letter"
+	s.Error("")               // want "log message must start with a lowercase English letter"
+	s.DPanic(" ")             // want "log message must start with a lowercase English letter"
+	s.Panic("Привет")         // want "log message must start with a lowercase English letter"
+	s.Fatal("zgood")
+
+	s.Debugf("fmtUpper")      // want "log message must start with a lowercase English letter"
+	s.Infof("fmt")            // want "log message must start with a lowercase English letter"
+	s.Warnf("fmtTab")         // want "log message must start with a lowercase English letter"
+	s.Errorf("fmtok")
+	s.DPanicf("fmt")          // want "log message must start with a lowercase English letter"
+	s.Panicf("z")             // want "log message must start with a lowercase English letter"
+	s.Fatalf("a")
+
+	s.Debugw("wrapUpper")     // want "log message must start with a lowercase English letter"
+	s.Infow("wrap")           // want "log message must start with a lowercase English letter"
+	s.Warnw("wrap")           // want "log message must start with a lowercase English letter"
+	s.Errorw("wrapok")
+	s.DPanicw("wrap")         // want "log message must start with a lowercase English letter"
+	s.Panicw("wrap")          // want "log message must start with a lowercase English letter"
+	s.Fatalw("wrap")          // want "log message must start with a lowercase English letter"
+
+	s.Debugln("lineUpper")    // want "log message must start with a lowercase English letter"
+	s.Infoln("line")          // want "log message must start with a lowercase English letter"
+	s.Warnln("line")          // want "log message must start with a lowercase English letter"
+	s.Errorln("lineok")
+	s.DPanicln("")            // want "log message must start with a lowercase English letter"
+	s.Panicln(" ")            // want "log message must start with a lowercase English letter"
+	s.Fatalln("l")            // want "log message must start with a lowercase English letter"
+
+	l.Info(zapConstUpper)     // want "log message must start with a lowercase English letter"
+	s.Infof(zapConstDigit)    // want "log message must start with a lowercase English letter"
+
+	s.Warn(zapVar)
+}

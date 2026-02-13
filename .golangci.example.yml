@@ -1,0 +1,21 @@
+version: "2"
+linters:
+  enable:
+    - loglint
+  settings:
+    custom:
+      loglint:
+        type: "module"
+        description: "checks slog/zap log calls"
+        settings:
+          start-with-lowercase: true
+          eng-letters: true
+          no-special-symbols: true
+          allowed-symbols: ".&"
+          sensitive-keywords:
+            - "password"
+            - "token"
+          sensitive-patterns:
+            - "(?i)apikey"
+            - "(?i)secret"
+            - - '\d+'

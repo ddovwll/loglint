@@ -1,0 +1,69 @@
+package multiple_rules
+
+import (
+	"context"
+	"log/slog"
+
+	"go.uber.org/zap"
+)
+
+func testsSlogMessages() {
+	ctx := context.Background()
+	l := slog.Default()
+
+	const (
+		slogConstBadPass = "Password!"
+		slogConstBadCard = "Card 1111-2222-3333-4444!"
+		slogConstBadRu   = "Пароль!"
+		slogConstOK      = "ok const message"
+	)
+
+	var slogVar = "Password!"
+
+	slog.Debug("ok message")
+	slog.Info("Password!")                           // want "log message must start with a lowercase English letter" "found forbidden symbol" "found sensitive keyword" "found sensitive pattern"
+	slog.Warn("token?")                              // want "found forbidden symbol" "found sensitive keyword" "found sensitive pattern"
+	slog.Error("Card 1234-5678-9012-3456!")          // want "log message must start with a lowercase English letter" "found forbidden symbol" "found sensitive pattern"
+	slog.DebugContext(ctx, "Пароль!")                // want "log message must start with a lowercase English letter" "log message must contain only English letters" "found forbidden symbol"
+	slog.Log(ctx, slog.LevelInfo, "password token?") // want "found forbidden symbol" "found sensitive keyword" "found sensitive pattern"
+
+	slog.Info(slogConstBadPass) // want "log message must start with a lowercase English letter" "found forbidden symbol" "found sensitive keyword" "found sensitive pattern"
+	slog.Warn(slogConstBadCard) // want "log message must start with a lowercase English letter" "found forbidden symbol" "found sensitive pattern"
+	slog.Error(slogConstBadRu)  // want "log message must start with a lowercase English letter" "log message must contain only English letters" "found forbidden symbol"
+	slog.LogAttrs(ctx, slog.LevelWarn, slogConstOK)
+
+	l.Debug(slogVar)
+	l.Info("Card 9999-8888-7777-6666?") // want "log message must start with a lowercase English letter" "found forbidden symbol" "found sensitive pattern"
+	l.Warn("safe logger")
+}
+
+func testsZapMessages() {
+	l := &zap.Logger{}
+	s := &zap.SugaredLogger{}
+
+	const (
+		zapConstBadTok  = "Token?"
+		zapConstBadCard = "Card 1212-3434-5656-7878!"
+		zapConstOK      = "ok zap const"
+	)
+
+	var zapVar = "Token?"
+
+	l.Debug("Password!")                  // want "log message must start with a lowercase English letter" "found forbidden symbol" "found sensitive keyword" "found sensitive pattern"
+	l.Info("token?")                      // want "found forbidden symbol" "found sensitive keyword" "found sensitive pattern"
+	l.Warn("Пароль!")                     // want "log message must start with a lowercase English letter" "log message must contain only English letters" "found forbidden symbol"
+	l.DPanic("Card 1234-5678-9012-3456!") // want "log message must start with a lowercase English letter" "found forbidden symbol" "found sensitive pattern"
+	l.Panic("safe panic")
+
+	s.Debugf("Token?")                    // want "log message must start with a lowercase English letter" "found forbidden symbol" "found sensitive keyword" "found sensitive pattern"
+	s.Warnw("Password!")                  // want "log message must start with a lowercase English letter" "found forbidden symbol" "found sensitive keyword" "found sensitive pattern"
+	s.DPanicln("Пароль!")                 // want "log message must start with a lowercase English letter" "log message must contain only English letters" "found forbidden symbol"
+	s.Infoln("Card 9090-8080-7070-6060?") // want "log message must start with a lowercase English letter" "found forbidden symbol" "found sensitive pattern"
+	s.Error("safe sugar")
+
+	l.Info(zapConstBadTok)    // want "log message must start with a lowercase English letter" "found forbidden symbol" "found sensitive keyword" "found sensitive pattern"
+	s.Errorf(zapConstBadCard) // want "log message must start with a lowercase English letter" "found forbidden symbol" "found sensitive pattern"
+	l.Info(zapConstOK)
+
+	s.Warn(zapVar)
+}

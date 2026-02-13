@@ -1,0 +1,106 @@
+package no_sensitive_keywords
+
+import (
+	"context"
+	"log/slog"
+
+	"go.uber.org/zap"
+)
+
+func testsSlogMessages() {
+	ctx := context.Background()
+	l := slog.Default()
+
+	const (
+		slogConstBadPass = "const password value"
+		slogConstBadIP   = "const ip_address value"
+		slogConstBadPet  = "const name_of_the_first_pet value"
+		slogConstOK      = "const safe message"
+	)
+
+	var slogVar = "var password value"
+
+	slog.Debug("safe slog debug")
+	slog.Info("leaked")                           // want "found sensitive keyword"
+	slog.Warn("client blocked")                   // want "found sensitive keyword"
+	slog.Error("required")                        // want "found sensitive keyword"
+	slog.DebugContext(ctx, "reset")               // want "found sensitive keyword"
+	slog.InfoContext(ctx, "missing")              // want "found sensitive keyword"
+	slog.WarnContext(ctx, "wrong")                // want "found sensitive keyword"
+	slog.ErrorContext(ctx, "pair")                // want "found sensitive keyword"
+	slog.Log(ctx, slog.LevelInfo, "before after") // want "found sensitive keyword"
+	slog.LogAttrs(ctx, slog.LevelWarn, "and")     // want "found sensitive keyword"
+
+	slog.Debug(slogConstBadPass)           // want "found sensitive keyword"
+	slog.InfoContext(ctx, slogConstBadIP)  // want "found sensitive keyword"
+	slog.WarnContext(ctx, slogConstBadPet) // want "found sensitive keyword"
+	slog.ErrorContext(ctx, slogConstOK)
+
+	l.Debug(slogVar)
+	l.Info("password")               // want "found sensitive keyword"
+	l.Warn("ip_address")             // want "found sensitive keyword"
+	l.Error("name_of_the_first_pet") // want "found sensitive keyword"
+	l.DebugContext(ctx, "safe logger context")
+	l.InfoContext(ctx, "in context")   // want "found sensitive keyword"
+	l.WarnContext(ctx, "in context")   // want "found sensitive keyword"
+	l.ErrorContext(ctx, "in context")  // want "found sensitive keyword"
+	l.Log(ctx, slog.LevelError, "and") // want "found sensitive keyword"
+	l.LogAttrs(ctx, slog.LevelError, "safe attrs")
+}
+
+func testsZapMessages() {
+	l := &zap.Logger{}
+	s := &zap.SugaredLogger{}
+
+	const (
+		zapConstBad = "const password in zap"
+		zapConstOK  = "const safe zap"
+	)
+
+	var zapVar = "var ip_address in zap"
+
+	l.Debug("in debug") // want "found sensitive keyword"
+	l.Info("safe info")
+	l.Warn("warn")       // want "found sensitive keyword"
+	l.Error("error")     // want "found sensitive keyword"
+	l.DPanic("PASSWORD") // want "found sensitive keyword"
+	l.Panic("value")     // want "found sensitive keyword"
+	l.Fatal("safe fatal")
+
+	s.Debug("in sugar") // want "found sensitive keyword"
+	s.Info("safe sugar")
+	s.Warn("password") // want "found sensitive keyword"
+	s.Error("and")     // want "found sensitive keyword"
+	s.DPanic("safe dpanic")
+	s.Panic("and") // want "found sensitive keyword"
+	s.Fatal("safe fatal sugar")
+
+	s.Debugf("fmt") // want "found sensitive keyword"
+	s.Infof("safe fmt")
+	s.Warnf("fmt")  // want "found sensitive keyword"
+	s.Errorf("fmt") // want "found sensitive keyword"
+	s.DPanicf("safe dpanicf")
+	s.Panicf("and fmt") // want "found sensitive keyword"
+	s.Fatalf("safe fatalf")
+
+	s.Debugw("w") // want "found sensitive keyword"
+	s.Infow("safe w")
+	s.Warnw("w")  // want "found sensitive keyword"
+	s.Errorw("w") // want "found sensitive keyword"
+	s.DPanicw("safe dpanicw")
+	s.Panicw("and w") // want "found sensitive keyword"
+	s.Fatalw("safe fatalw")
+
+	s.Debugln("ln") // want "found sensitive keyword"
+	s.Infoln("safe ln")
+	s.Warnln("ln")  // want "found sensitive keyword"
+	s.Errorln("ln") // want "found sensitive keyword"
+	s.DPanicln("safe dpanicln")
+	s.Panicln("and ln") // want "found sensitive keyword"
+	s.Fatalln("safe fatalln")
+
+	l.Info(zapConstBad) // want "found sensitive keyword"
+	s.Infof(zapConstOK)
+
+	s.Warn(zapVar)
+}
